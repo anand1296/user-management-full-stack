@@ -19,40 +19,22 @@ const UsersListPage = () => {
 
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const createUser = async (e: any) => {
-        const {
-            name: { value: name },
-            email: { value: email },
-        } = e.target;
-        if (name && email) {
-            console.log(name, email);
-            try {
-                const response = await axios.post(`${apiUrl}/api/users`, { name, email });
-                setUsers((prevUsers) => [...prevUsers, response.data]);
-                e.target.reset();
-            } catch (error) {
-                console.error("Error creating user:", error);
-            }
-        } else {
-            console.error("Invalid user name or email");
+    const createUser = async (user: { name: string; email: string }) => {
+        try {
+            const response = await axios.post(`${apiUrl}/api/users`, user);
+            setUsers((prevUsers) => [response.data, ...prevUsers]);
+        } catch (error) {
+            console.error("Error creating user:", error);
         }
     };
 
-    const updateUser = async (e: any, id: number) => {
-        const {
-            name: { value: name },
-            email: { value: email },
-        } = e.target;
-        if (name && email) {
-            try {
-                const response = await axios.put(`${apiUrl}/api/users/${id}`, { name, email });
-                setUsers(users.map((user) => (user.id === user.id ? response.data : user)));
-                setEditableUser(null);
-            } catch (error) {
-                console.error("Error updating user:", error);
-            }
-        } else {
-            console.error("Invalid user name or email");
+    const updateUser = async (user: { name: string; email: string }, id: number) => {
+        try {
+            const response = await axios.put(`${apiUrl}/api/users/${id}`, user);
+            setUsers(users.map((_user) => (_user.id === id ? response.data : _user)));
+            setEditableUser(null);
+        } catch (error) {
+            console.error("Error updating user:", error);
         }
     };
 
@@ -67,9 +49,8 @@ const UsersListPage = () => {
 
     const scrollToTop = () => {
         const container = containerRef.current;
-        console.log(container);
         if (container) {
-            container.scrollTo({ top: 0, behavior: "smooth" }); // Smooth scroll to the top
+            container.scrollIntoView({ behavior: "smooth", block: "start" });
         }
     };
 
@@ -78,6 +59,7 @@ const UsersListPage = () => {
         const fetchUsers = async () => {
             try {
                 const response = await axios.get(`${apiUrl}/api/users`);
+                console.log(response);
                 setUsers(response.data.reverse());
             } catch (error) {
                 console.error("Error fetching users:", error);
@@ -87,8 +69,8 @@ const UsersListPage = () => {
     }, [apiUrl]);
 
     return (
-        <div className="w-full p-4 my-4 rounded shadow bg-cyan-500" ref={containerRef}>
-            <div className="mb-6 flex items-center justify-around">
+        <div className="w-full p-4 my-4 rounded shadow bg-cyan-500">
+            <div className="mb-6 flex items-center justify-around" ref={containerRef}>
                 <img src="/next.svg" alt="next-logo" className="w-20 h-20" />
                 <img src="/go.svg" alt="go-logo" className="w-20 h-20" />
                 <img src="/docker.svg" alt="go-logo" className="w-20 h-20" />
@@ -96,7 +78,12 @@ const UsersListPage = () => {
             </div>
 
             {/* Create user  */}
-            <CreateUserForm editableUser={editableUser} createUser={createUser} updateUser={updateUser} />
+            <CreateUserForm
+                editableUser={editableUser}
+                setEditableUser={setEditableUser}
+                createUser={createUser}
+                updateUser={updateUser}
+            />
 
             {/*Users list */}
             {users.map((user) => {
@@ -107,25 +94,14 @@ const UsersListPage = () => {
                         id={id}
                         name={name}
                         email={email}
-                        editUser={() => setEditableUser(user)}
+                        editUser={() => {
+                            scrollToTop();
+                            setEditableUser(user);
+                        }}
                         deleteUser={() => deleteUser(id)}
                     />
                 );
             })}
-
-            {/* mock user  */}
-            <div key={1000}>
-                <UserCard
-                    id={1000}
-                    name={"Mock"}
-                    email={"mockuser@test.com"}
-                    editUser={() => {
-                        scrollToTop();
-                        setEditableUser({ id: 1000, name: "Mock", email: "mockuser@test.com" });
-                    }}
-                    deleteUser={() => deleteUser(1000)}
-                />
-            </div>
         </div>
     );
 };
